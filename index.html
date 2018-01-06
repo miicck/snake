@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+
+<head>
+    <script src='/socket.io/socket.io.js'></script>
+    <style>
+        .me,
+        .empty,
+        .enemy
+        {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border: 1px solid #eee;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .me
+        {
+            background-color: green;
+        }
+
+        .enemy
+        {
+            background-color: red;
+        }
+
+        .line {
+            height: 12px;
+            width: 100%;
+        }
+    </style>
+    <script>
+        var socket = io();
+        var SIZE = 50;
+        var id = -1;
+
+        socket.on('update', function (data) { gameUpdate(data); });
+        socket.on('error', console.error.bind(console));
+        socket.on('message', console.log.bind(console));
+
+        socket.on('welcome', function (data) {
+            id = data.id;
+            console.log("client connected, id = " + id);
+        });
+
+        hasStarted = false;
+        function startup() {
+            var dataElm = document.getElementById('data');
+            for (x = 0; x < SIZE; ++x) {
+                var line = document.createElement('div');
+                line.className = "line";
+                dataElm.appendChild(line);
+                for (y = 0; y < SIZE; ++y) {
+                    var point = document.createElement('div');
+                    point.className = "point";
+                    point.id = "point_" + x + "_" + y;
+                    line.appendChild(point);
+                }
+            }
+        }
+
+        function gameUpdate(data) {
+            if (!hasStarted) {
+                hasStarted = true;
+                startup();
+            }
+
+            var elm = document.getElementById("point_" + data.x + "_" + data.y);
+            if (data.id == 0) elm.className = "empty";
+            else if (data.id == id) elm.className = "me";
+            else elm.className = "enemy";
+        }
+
+        document.addEventListener('keydown', function (event) {
+            if (event.keyCode == 87) // W               
+                socket.emit('steer', { xdir: -1, ydir: 0, id: id });
+            else if (event.keyCode == 65) // A              
+                socket.emit('steer', { xdir: 0, ydir: -1, id: id });
+            else if (event.keyCode == 83) // S              
+                socket.emit('steer', { xdir: 1, ydir: 0, id: id });
+            else if (event.keyCode == 68) // D                
+                socket.emit('steer', { xdir: 0, ydir: 1, id: id });
+        });
+
+    </script>
+</head>
+
+<body>
+    <div id="data"></div>
+</body>
+
+</html>
